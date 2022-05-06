@@ -1,0 +1,18 @@
+# datafile for ls
+# see https://pubhub.devnetcloud.com/media/pyats/docs/aetest/datafile.html#
+# for how to use datafiles
+
+testcases: 
+
+    svlformation:     
+        uid: svlformation
+        
+
+    svltest:     
+        uid: svltest
+        
+
+    svlremove:     
+        uid: svlremove
+        
+
