@@ -14,6 +14,7 @@ __credits__ = ['list', 'of', 'credit']
 __version__ = 1.0
 
 import logging
+
 from pyats import aetest
 # create a logger for this module
 logger = logging.getLogger(__name__)
@@ -53,17 +54,20 @@ class svlformation(aetest.Testcase):
     # as long as each bears a unique method name
     # this is just an example
     @aetest.test
-    def test_pre_check_stackwise_virtual_links(self,svl_handle):
+    def test_validate_links_for_stackwise_virtual_pair(self,svl_handle):
+        '''
+            This is a precheck test to check if the links provided in the testbed yaml file are correct.
+        '''
         steps = Steps()
         result=True
         for stackpair in svl_handle.device_pair_list:
-            with steps.start("Link Precheck",continue_= True) as step:
+            with steps.start("Validation of Stackwise Virtual status before removing config",continue_= True) as step:
                 if not svl_handle.check_links(stackpair):
                     Logger.error("The devices provided to be paired into SVL does not have any links connected to eachothers")
                     result=False
-                    step.failed("The Prechecks failed. Fix Links before script run", goto = ['CommonCleanup'])
+                    step.failed("The Stackwise Cirtual Links Prechecks failed for VirtualPair: {}".format(stackpair))
         if not result:
-            self.failed("Precheck for links correctness failed on some of the Stackwise Virtual Pairs")
+            self.failed("Validation of Stackwise virtual config links failed")
 
     @aetest.test
     def test_validate_console_connectivity_to_switches(self,svl_handle):
@@ -81,60 +85,68 @@ class svlformation(aetest.Testcase):
             self.failed("Console connectivity to some or all of the devices could not  be established", goto = ['CommonCleanup'])
 
     @aetest.test
-    def test_preches_validate_platform_and_version_match_and_minimum_version_req(self,svl_handle):
-        steps = Steps()
+    def test_validate_configs_for_stackwise_virtual_pair(self,svl_handle):
+        '''
+            This is a precheck test to verify if the stackwise virtual configs are presnt on the switches
+        '''
         result=True
+        steps = Steps()
         for stackpair in svl_handle.device_pair_list:
-            with steps.start("Platform and Version req precheck",continue_= True) as step:
-                if not svl_handle.check_min_version_req(stackpair):
+            with steps.start("Validation of Stackwise Virtual status before removing config",continue_= True) as step:
+                if not svl_handle.check_stackwise_virtual_confgured(stackpair):
                     result=False
-                    step.failed("Minimum Version and platform pre-check failed ", goto = ['CommonCleanup'])
+                    step.failed("Stackwise Virtual configs are not present on one or both of the switches of stackpair: {}".format(stackpair))
         if not result:
-            self.failed("Minimum Version and Platform check failed.", goto = ['CommonCleanup'])
+            self.failed("Validation of Stackwise Virtual config failed ", goto = ['CommonCleanup'])
 
     @aetest.test
-    def test_configure_stackwise_virtual_configs_and_validate(self,svl_handle):
+    def test_remove_stackwiseVirtual_configs_and_make_them_independent(self,svl_handle):
         '''
+            This test removes the stack-wise virtual configs from the switches and save and reload the switchs to apply the configs.
+            After the test the switch will be independent. 
+            The test depend on the links config provided in the yaml file. 
+            Please ensure correct links are provided in the yamls file
         '''
-        steps = Steps()
         result=True
+        steps = Steps()
         for stackpair in svl_handle.device_pair_list:
-            with steps.start("Stackwise Virtual config") as step:
-                if not svl_handle.configure_svl_step1(stackpair):
+            with steps.start("Stackwise Virtual Config remoaval",continue_= True) as step:
+                #Remove Stackwise Virtual Config!!
+                if not svl_handle.disable_svl_config(stackpair):
                     result=False
-                    step.failed("Step1 Configure the step 1 config, switch number and domain configs on switches, failed")
+                    step.failed("StackwiseVirtual Configs  removal failed from the one of both switches.")
 
-                if not svl_handle.save_config_and_reload(stackpair):
+                elif not svl_handle.save_config_and_reload(stackpair):
                     result=False
-                    step.failed("Step2 Save config and reload the switches, failed")
-
-                if not svl_handle.configure_svl_step2_svllinkconfig(stackpair):
-                    result=False
-                    step.failed("Step3 Config stackwise Virtual links on switches, failed.")
-
-                if not svl_handle.save_config_and_reload(stackpair):
-                    result=False
-                    step.failed("Step4 Save config and reload the switches, failed.")
-
-                if not svl_handle.configure_svl_step3_dad_linkconfig(stackpair):
-                    result=False
-                    step.failed("Step5 Configuring stackwise Virtual Dual Active Detection Links, failed.")
-
-                if not svl_handle.save_config_and_reload(stackpair):
-                    result=False
-                    step.failed("Step6 Save config and reload the switches, failed.")
-
-                if not svl_handle.configure_svl_step4_validate_svl(stackpair):
-                    result=False
-                    step.failed("Step7 Validate Stackwise Virtual, failed.")
+                    step.failed("StackwiseVirtual save config and reload, for stackwise virtual config is failed on one or both switches.")
+                else:
+                    step.passed("StackwiseVirtual configs are successfully removed from the switches.")
 
         if not result:
-            self.failed("Minimum Version and Platform check failed.")
+            self.failed("Stackwise Virtual config removal failed ", goto = ['CommonCleanup'])
+        else:
+            self.passed("successfully removed stackwise virtual configs from all the stack pairs.")
+
+    @aetest.test
+    def test_validate_configs_for_stackwise_virtual_pair_removed(self,svl_handle):
+        '''
+            This is a precheck test to verify if the stackwise virtual configs are presnt on the switches
+        '''
+        result=True
+        steps = Steps()
+        for stackpair in svl_handle.device_pair_list:
+            with steps.start("Validation of Stackwise Virtual status before removing config",continue_= True) as step:
+                if svl_handle.check_stackwise_virtual_confgured(stackpair):
+                    result=False
+                    step.failed("Stackwise Virtual configs are still present on one or both of the switches of stackpair: {}".format(stackpair))
+        if not result:
+            self.failed("Validation of Stackwise Virtual config are not removed ")
 
     @aetest.cleanup
     def cleanup(self):
         pass
     
+
 class CommonCleanup(aetest.CommonCleanup):
     '''CommonCleanup Section
 

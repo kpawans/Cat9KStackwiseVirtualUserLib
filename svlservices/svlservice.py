@@ -66,7 +66,8 @@ class StackWiseVirtual(object):
 	def get_device_pairs(self):
 		for pair in self.testbed.custom['switchstackinggroups']:
 			if pair["numberofswitches"] != len(pair["switchs"]): 
-				Logger.error("Testbed File Validation Error: The number of devices {}, an count devices provided {} does not match".format(
+				Logger.error(
+					"Testbed File Validation Error: The number of devices {}, an count devices provided {} does not match".format(
 								pair["numberofswitches"],pair["switchs"]))
 				raise
 			dev_stack={}
@@ -114,7 +115,8 @@ class StackWiseVirtual(object):
 									 " First upgrade the device to minimum supported version:{}".forma(item["ref_version"]))
 						return False
 					else:
-						Logger.info("Device Version:{} is higher then minimum required version:{}".format(device_details['version'] ,item["ref_version"]))
+						Logger.info("Device Version:{} is higher then minimum required version:{}".format(
+								device_details['version'] ,item["ref_version"]))
 			if not found:
 				Logger.warning("The Platform not found in reference list, this may not support Stackwise Virtual")
 				return False
@@ -172,16 +174,23 @@ class StackWiseVirtual(object):
 			Logger.error("Could not connect to devices, Can not proceed.")
 			return False
 		#On Switch1
-		self.testbed.devices[stackpair["switch1"]].execute("switch 1 renumber  {}".format(self.testbed.devices[stackpair["switch1"]].custom["switchnumber"]),reply=DIALOG_CONFIRM)
-		self.testbed.devices[stackpair["switch1"]].execute("switch 1 priority 15",reply=DIALOG_CONFIRM)
-		#On Switch2
-		self.testbed.devices[stackpair["switch2"]].execute("switch 1 renumber {}".format(self.testbed.devices[stackpair["switch2"]].custom["switchnumber"]),reply=DIALOG_CONFIRM)
-		self.testbed.devices[stackpair["switch2"]].execute("switch 1 priority 10",reply=DIALOG_CONFIRM)
-
+		self.testbed.devices[stackpair["switch1"]].execute("switch 1 renumber  {}".format(
+				self.testbed.devices[stackpair["switch1"]].custom["switchnumber"]),reply=DIALOG_CONFIRM)
+		self.testbed.devices[stackpair["switch1"]].execute("switch 2 renumber  {}".format(
+				self.testbed.devices[stackpair["switch1"]].custom["switchnumber"]),reply=DIALOG_CONFIRM)
+		self.testbed.devices[stackpair["switch1"]].execute("switch {} priority 15".format(
+				self.testbed.devices[stackpair["switch1"]].custom["switchnumber"]),reply=DIALOG_CONFIRM)
 		self.testbed.devices[stackpair["switch1"]].configure(config,reply=DIALOG_CONFIRM1)
-		self.testbed.devices[stackpair["switch2"]].configure(config,reply=DIALOG_CONFIRM1)
-
 		self.testbed.devices[stackpair["switch1"]].execute("show stackwise-virtual")
+		#On Switch2
+		self.testbed.devices[stackpair["switch2"]].execute("switch 1 renumber {}".format(
+				self.testbed.devices[stackpair["switch2"]].custom["switchnumber"]),reply=DIALOG_CONFIRM)
+		self.testbed.devices[stackpair["switch2"]].execute("switch 2 renumber {}".format(
+				self.testbed.devices[stackpair["switch2"]].custom["switchnumber"]),reply=DIALOG_CONFIRM)
+
+		self.testbed.devices[stackpair["switch2"]].execute("switch {} priority 10".format(
+				self.testbed.devices[stackpair["switch2"]].custom["switchnumber"]),reply=DIALOG_CONFIRM)
+		self.testbed.devices[stackpair["switch2"]].configure(config,reply=DIALOG_CONFIRM1)
 		self.testbed.devices[stackpair["switch2"]].execute("show stackwise-virtual")
 
 		return True
@@ -283,7 +292,7 @@ class StackWiseVirtual(object):
 		self.testbed.devices[stackpair["switch2"]].execute("write memory")
 		return True
 
-	def configure_svl_step4_validate_svl(self,stackpair):
+	def configure_svl_step4_validate_svl(self,stackpair,retry=10):
 		'''
 		Validate the link status in the Stackwise Virtual
 		'''
@@ -305,10 +314,32 @@ class StackWiseVirtual(object):
 					else:
 						Logger.error("Link {} is not available in remote link for other switch".format(link.name)) 
 						result=False
+		if not result and retry > 0:
+			time.sleep(30)
+			return self.configure_svl_step4_validate_svl(stackpair,retry=retry-1)
+		return result
+
+	def check_stackwise_virtual_confgured(self,stackpair):
+		'''
+		Validate the link status in the Stackwise Virtual
+		'''
+		result=True
+		switches=[stackpair["switch1"], stackpair["switch2"]]
+		dev_details=[]
+		for dev in switches:
+			output1 = self.testbed.devices[dev].execute("show run | sec stackwise-virtual")
+			if re.findall("stackwise-virtual", output1):
+				Logger.info("Stackwise Virtual configs are present")
+			else:
+				Logger.error("Stackwise Virtual configs are not present on the switch: {}".format(dev))
+				result=False
 		return result
 
 	def configure_svl(self, stackpair):
 		#Validations
+		'''
+			Configure Stackwise SVL, All Steps in 1 functions good for multiple SVL config in parallel run
+		'''
 		if stackpair['switch1'] == stackpair['switch2']:
 			Logger.error("The Device Pair has same name, invalid combination")
 			return False
