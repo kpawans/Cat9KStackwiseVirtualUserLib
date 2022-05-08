@@ -16,9 +16,10 @@ __version__ = 1.0
 import logging
 
 from pyats import aetest
-
 # create a logger for this module
 logger = logging.getLogger(__name__)
+from svlservices.svlservice import StackWiseVirtual
+
 
 class CommonSetup(aetest.CommonSetup):
 
@@ -30,9 +31,10 @@ class CommonSetup(aetest.CommonSetup):
         # make sure testbed is provided
         assert testbed, 'Testbed is not provided!'
 
-        # connect to all testbed devices
-        testbed.connect()
-
+        #initilize StackWiseVirtual Class
+        svl_handle = StackWiseVirtual(testbed)
+        print(svl_handle)
+        self.parent.parameters['svl_handle'] = svl_handle
 
 class svlformation(aetest.Testcase):
     '''svlformation
@@ -45,15 +47,46 @@ class svlformation(aetest.Testcase):
     # groups = []
 
     @aetest.setup
-    def setup(self):
-        pass
+    def setup(self,svl_handle):
+        svl_handle.get_device_pairs()
 
     # you may have N tests within each testcase
     # as long as each bears a unique method name
     # this is just an example
     @aetest.test
-    def test(self):
-        pass
+    def test(self,svl_handle):
+        stackpair = svl_handle.device_pair_list[0]
+        if not svl_handle.check_links(stackpair):
+            Logger.error("The devices provided to be paired into SVL does not have any links connected to eachothers")
+            self.failed("The Prechecks failed.", goto = ['CommonCleanup'])
+
+    @aetest.test
+    def test(self,svl_handle):
+        stackpair = svl_handle.device_pair_list[0]
+        if not svl_handle.check_min_version_req(stackpair):
+            self.failed("Minimum Version check failed ", goto = ['CommonCleanup'])
+
+    @aetest.test
+    def test(self,svl_handle):
+        stackpair = svl_handle.device_pair_list[0]
+        if not svl_handle.configure_svl_step1(stackpair):
+            self.failed("Step1 Config failed, Revover Mannuly.", goto = ['CommonCleanup'])
+        if not svl_handle.save_config_and_reload(stackpair):
+            self.failed("Step1 Config failed, Revover Mannuly.", goto = ['CommonCleanup'])
+
+        if not svl_handle.configure_svl_step2_svllinkconfig(stackpair):
+            self.failed("Step1 Config failed, Revover Mannuly.", goto = ['CommonCleanup'])
+        if not svl_handle.save_config_and_reload(stackpair):
+            self.failed("Step1 Config failed, Revover Mannuly.", goto = ['CommonCleanup'])
+
+        if not svl_handle.configure_svl_step3_dad_linkconfig(stackpair):
+            self.failed("Step1 Config failed, Revover Mannuly.", goto = ['CommonCleanup'])
+
+        if not svl_handle.save_config_and_reload(stackpair):
+            self.failed("Step1 Config failed, Revover Mannuly.", goto = ['CommonCleanup'])
+
+        if not svl_handle.configure_svl_step4_validate_svl(stackpair):
+            self.failed("Step1 Config failed, Revover Mannuly.")
 
     @aetest.cleanup
     def cleanup(self):

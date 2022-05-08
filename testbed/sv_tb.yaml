@@ -1,18 +1,83 @@
-# datafile for ls
-# see https://pubhub.devnetcloud.com/media/pyats/docs/aetest/datafile.html#
-# for how to use datafiles
+testbed:
+    name: ISBTE-TB
+    tacacs:
+        login_prompt: "Username:"
+        password_prompt: "Password:"
+        username: sampleuser
+    passwords:
+        tacacs: tacacspassword
+        enable: enablepassword
+        line: linepassword
+    custom:
+        switchstackinggroups: [
+            {"numberofswitches":2, "switchs": ["SWITCH-1","SWITCH-2"]} ]
+devices:
+    SWITCH-1:
+        os: 'iosxe'
+        type: 'IOS-XE'
+        custom:
+            switchnumber: 1
+        alias: SWITCH-1
+        credentials:
+            default:
+                password: cisco
+                username: cisco
+            tacacs: "%{testbed.tacacs}"
+            passwords: "%{testbed.passwords}"
+        connections:
+            defaults: {class: 'unicon.Unicon'}
+            a:
+                protocol: telnet
+                ip: 10.195.243.21
+                port: 2048
+            con_credentials:
+                terminal_server_username: tsusername
+                terminal_server_password: tspassword
+                terminal_server_enable_password: tsenablepass
 
-testcases: 
+    SWITCH-2:
+        os: 'iosxe'
+        type: 'IOS-XE'
+        custom:
+            switchnumber: 2
+        alias: SWITCH-2
+        credentials:
+            default:
+                password: cisco
+                username: cisco
+            tacacs: "%{testbed.tacacs}"
+            passwords: "%{testbed.passwords}"
+        connections:
+            a:
+                protocol: telnet
+                ip: 10.195.243.21
+                port: 2033
+            con_credentials:
+                terminal_server_username: tsusername
+                terminal_server_password: tspassword
+                terminal_server_enable_password: tsenablepass
 
-    svlformation:     
-        uid: svlformation
-        
+topology:
+  SWITCH-1:
+    interfaces:
+      TenGigabitEthernet1/0/24:
+        link: DAD-LINK-1
+        type: ethernet
+      TenGigabitEthernet1/0/33:
+        link: STACKWISEVIRTUAL-LINK-1
+        type: ethernet
+      TenGigabitEthernet1/0/40:
+        link: STACKWISEVIRTUAL-LINK-2
+        type: ethernet
 
-    svltest:     
-        uid: svltest
-        
-
-    svlremove:     
-        uid: svlremove
-        
-
+  SWITCH-2:
+    interfaces:
+      TenGigabitEthernet2/0/24:
+        link: DAD-LINK-1
+        type: ethernet
+      TenGigabitEthernet2/0/33:
+        link: STACKWISEVIRTUAL-LINK-1
+        type: ethernet
+      TenGigabitEthernet2/0/40:
+        link: STACKWISEVIRTUAL-LINK-2
+        type: ethernet
