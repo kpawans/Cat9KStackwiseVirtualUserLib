@@ -300,8 +300,10 @@ class StackWiseVirtual(object):
 		switches=[stackpair["switch1"], stackpair["switch2"]]
 		dev_details=[]
 		for dev in switches:
-			output1 = self.testbed.devices[dev].execute("show stackwise-virtual")
-			if re.findall("Stackwise Virtual : Enabled", output1):
+			output = self.testbed.devices[dev].execute("show stackwise-virtual")
+			output1 = self.testbed.devices[dev].execute("show stackwise-virtual neighbors")
+			output2 = self.testbed.devices[dev].execute("show stackwise-virtual dual-active-detection")
+			if re.findall("Stackwise Virtual : Enabled", output):
 				Logger.info("Stackwise Virtual Enabled")
 			else:
 				Logger.error("Stackwise Virtual not Enabled")
@@ -310,9 +312,33 @@ class StackWiseVirtual(object):
 				if link.link.name.upper().find('STACKWISEVIRTUAL-LINK') != -1:
 					a=re.findall(link.name, output1)
 					if len(a) >= 2:
-						Logger.info("Link {} is  available in remote link for other switch!".format(link.name)) 
+						Logger.info("Link {} from switch {} is available in the links for stackwise Virtual!".format(link.name,stackpair["switch1"]))
 					else:
-						Logger.error("Link {} is not available in remote link for other switch".format(link.name)) 
+						Logger.error("Link {} from switch {} is not available in the links for stackwise Virtual".format(link.name,stackpair["switch1"]))
+						result=False
+			for link in self.testbed.devices[stackpair["switch2"]]:
+				if link.link.name.upper().find('STACKWISEVIRTUAL-LINK') != -1:
+					a=re.findall(link.name, output1)
+					if len(a) >= 2:
+						Logger.info("Link {} from switch {} is available in the links for stackwise Virtual!".format(link.name,stackpair["switch2"]))
+					else:
+						Logger.error("Link {} from switch {} is not available in the links for stackwise Virtual".format(link.name,stackpair["switch2"]))
+						result=False
+			for link in self.testbed.devices[stackpair["switch1"]]:
+				if link.link.name.upper().find('DAD-LINK') != -1:
+					a=re.findall("\d+\s+{}\d+up".format(link.name), output2)
+					if len(a) >= 2:
+						Logger.info("Link {} from switch {} is available in DAD links!".format(link.name,stackpair["switch1"]))
+					else:
+						Logger.error("Link {} from switch {} is not available in DAD links!".format(link.name,stackpair["switch1"]))
+						result=False
+			for link in self.testbed.devices[stackpair["switch2"]]:
+				if link.link.name.upper().find('DAD-LINK') != -1:
+					a=re.findall("\d+\s+{}\d+up".format(link.name), output2)
+					if len(a) >= 2:
+						Logger.info("Link {} from switch {} is available in DAD links!!".format(link.name,stackpair["switch2"]))
+					else:
+						Logger.error("Link {} from switch {} is not available in DAD links!".format(link.name,stackpair["switch2"]))
 						result=False
 		if not result and retry > 0:
 			time.sleep(30)
