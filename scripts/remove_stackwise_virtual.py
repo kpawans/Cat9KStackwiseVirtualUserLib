@@ -9,7 +9,7 @@ ls.py
 # (update below with your contact information if needed)
 __author__ = 'Cisco Systems Inc.'
 __copyright__ = 'Copyright (c) 2019, Cisco Systems Inc.'
-__contact__ = ['pyats-support-ext@cisco.com']
+__contact__ = ['pawansi@cisco.com']
 __credits__ = ['list', 'of', 'credit']
 __version__ = 1.0
 
@@ -119,7 +119,7 @@ class svl_config_removal(aetest.Testcase):
                     result=False
                     step.failed("StackwiseVirtual save config and reload, for stackwise virtual config is failed on one or both switches.")
                 else:
-                    self.log.info("StackwiseVirtual configs are successfully removed from the switches.")
+                    Logger.info("StackwiseVirtual configs are successfully removed from the switches.")
 
         if not result:
             self.failed("Stackwise Virtual config removal failed ", goto = ['CommonCleanup'])

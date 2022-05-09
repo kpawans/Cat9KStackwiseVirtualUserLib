@@ -9,7 +9,7 @@ ls.py
 # (update below with your contact information if needed)
 __author__ = 'Cisco Systems Inc.'
 __copyright__ = 'Copyright (c) 2019, Cisco Systems Inc.'
-__contact__ = ['pyats-support-ext@cisco.com']
+__contact__ = ['pawansi@cisco.com']
 __credits__ = ['list', 'of', 'credit']
 __version__ = 1.0
 
