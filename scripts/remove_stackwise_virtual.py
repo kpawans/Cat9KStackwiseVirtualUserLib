@@ -17,7 +17,7 @@ import logging
 
 from pyats import aetest
 # create a logger for this module
-logger = logging.getLogger(__name__)
+Logger = logging.getLogger(__name__)
 from svlservices.svlservice import StackWiseVirtual
 from pyats.aetest.steps import Steps
 
@@ -33,14 +33,13 @@ class CommonSetup(aetest.CommonSetup):
 
         #initilize StackWiseVirtual Class
         svl_handle = StackWiseVirtual(testbed)
-        print(svl_handle)
+        Logger.info(svl_handle)
         self.parent.parameters['svl_handle'] = svl_handle
 
-class svlformation(aetest.Testcase):
-    '''svlformation
-
-    < docstring description of this testcase >
-
+class svl_config_removal(aetest.Testcase):
+    '''svl_config_removal
+        1. This testcase remove preconfigured svl configs of stackwose virtual switch.
+        2. Validate that the configs are removed from both the switches.
     '''
 
     # testcase groups (uncomment to use)
@@ -120,7 +119,7 @@ class svlformation(aetest.Testcase):
                     result=False
                     step.failed("StackwiseVirtual save config and reload, for stackwise virtual config is failed on one or both switches.")
                 else:
-                    step.passed("StackwiseVirtual configs are successfully removed from the switches.")
+                    self.log.info("StackwiseVirtual configs are successfully removed from the switches.")
 
         if not result:
             self.failed("Stackwise Virtual config removal failed ", goto = ['CommonCleanup'])

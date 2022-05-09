@@ -52,7 +52,6 @@ class MultiUserThreadWithReturn(Thread):
         if self._Thread__target is not None:
             self._return = self._Thread__target(*self._Thread__args,
                                                 **self._Thread__kwargs)
-
     def join(self):
         Thread.join(self)
         return self._return
@@ -256,6 +255,12 @@ class StackWiseVirtual(object):
 		return True
 
 	def disable_svl_config(self, stackpair):
+		'''
+			This function removes the SVL configs from stackwise virtual switches. 
+			1. Step1: Remove Dual Active detection configs.
+			2. Step2: Remove stackwise Virtual link configs.
+			3. Step3: Remove stackwise Virtual  config.
+		'''
 		if not self.connect_to_stackpair(stackpair):
 			Logger.error("Could not connect to devices, Can not proceed.")
 			return False
@@ -292,7 +297,7 @@ class StackWiseVirtual(object):
 		self.testbed.devices[stackpair["switch2"]].execute("write memory")
 		return True
 
-	def configure_svl_step4_validate_svl(self,stackpair,retry=10):
+	def validate_stackwise_SVL_and_DAD_links_status(self,stackpair,retry=10):
 		'''
 		Validate the link status in the Stackwise Virtual
 		'''
@@ -326,23 +331,23 @@ class StackWiseVirtual(object):
 						result=False
 			for link in self.testbed.devices[stackpair["switch1"]]:
 				if link.link.name.upper().find('DAD-LINK') != -1:
-					a=re.findall("\d+\s+{}\d+up".format(link.name), output2)
-					if len(a) >= 2:
+					a=re.findall("\d+\s+{}\s+up".format(link.name), output2)
+					if len(a) >= 1:
 						Logger.info("Link {} from switch {} is available in DAD links!".format(link.name,stackpair["switch1"]))
 					else:
 						Logger.error("Link {} from switch {} is not available in DAD links!".format(link.name,stackpair["switch1"]))
 						result=False
 			for link in self.testbed.devices[stackpair["switch2"]]:
 				if link.link.name.upper().find('DAD-LINK') != -1:
-					a=re.findall("\d+\s+{}\d+up".format(link.name), output2)
-					if len(a) >= 2:
+					a=re.findall("\d+\s+{}\s+up".format(link.name), output2)
+					if len(a) >= 1:
 						Logger.info("Link {} from switch {} is available in DAD links!!".format(link.name,stackpair["switch2"]))
 					else:
 						Logger.error("Link {} from switch {} is not available in DAD links!".format(link.name,stackpair["switch2"]))
 						result=False
 		if not result and retry > 0:
 			time.sleep(30)
-			return self.configure_svl_step4_validate_svl(stackpair,retry=retry-1)
+			return self.validate_stackwise_SVL_and_DAD_links_status(stackpair,retry=retry-1)
 		return result
 
 	def check_stackwise_virtual_confgured(self,stackpair):
@@ -384,17 +389,17 @@ class StackWiseVirtual(object):
 		self.save_config_and_reload(stackpair)
 
 		if not self.configure_svl_step2_svllinkconfig(stackpair):
-			Logger.info("Step1 Config failed, Revover Mannuly.")
+			Logger.info("Step2 Config failed, Revover Mannuly.")
 			return False
 		self.save_config_and_reload(stackpair)
 
 		if not self.configure_svl_step3_dad_linkconfig(stackpair):
-			Logger.info("Step1 Config failed, Revover Mannuly.")
+			Logger.info("Step3 Config failed, Revover Mannuly.")
 			return False
 		self.save_config_and_reload(stackpair)
 
-		if not self.configure_svl_step4_validate_svl(stackpair):
-			Logger.info("Step1 Config failed, Revover Mannuly.")
+		if not self.validate_stackwise_SVL_and_DAD_links_status(stackpair):
+			Logger.info("Step4 Config failed, Revover Mannuly.")
 			return False
 
 		return True

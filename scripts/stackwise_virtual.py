@@ -16,50 +16,50 @@ __version__ = 1.0
 import logging
 from pyats import aetest
 # create a logger for this module
-logger = logging.getLogger(__name__)
+Logger = logging.getLogger(__name__)
 from svlservices.svlservice import StackWiseVirtual
 from pyats.aetest.steps import Steps
 
 class CommonSetup(aetest.CommonSetup):
-
     @aetest.subsection
-    def connect(self, testbed):
+    def commonsetup_initialize testbed(self, testbed):
         '''
-        establishes connection to all your testbed devices.
+            Establishes connection to all your testbed devices.
         '''
         # make sure testbed is provided
         assert testbed, 'Testbed is not provided!'
 
         #initilize StackWiseVirtual Class
         svl_handle = StackWiseVirtual(testbed)
-        print(svl_handle)
+        Logger.info(svl_handle)
         self.parent.parameters['svl_handle'] = svl_handle
 
-class svlformation(aetest.Testcase):
+class svlformation_and_validation(aetest.Testcase):
     '''svlformation
-
-    < docstring description of this testcase >
-
+        The Testcase configure the Stackwise Virtual conifg on two switches provided in the testbed yaml.
     '''
 
     # testcase groups (uncomment to use)
     # groups = []
 
     @aetest.setup
-    def setup(self,svl_handle):
+    def setup_make_svl_pairs_from_testbed_input(self,svl_handle):
+        '''
+            This is to make SVL logical pair for further tests from testbed yaml inputfile.
+        '''
         svl_handle.get_device_pairs()
 
-    # you may have N tests within each testcase
-    # as long as each bears a unique method name
-    # this is just an example
     @aetest.test
     def test_pre_check_stackwise_virtual_links(self,svl_handle):
+        '''
+            This is precheck on links of the Stackwise virtual to see if both switches links are provided. 
+        '''
         steps = Steps()
         result=True
         for stackpair in svl_handle.device_pair_list:
             with steps.start("Link Precheck",continue_= True) as step:
                 if not svl_handle.check_links(stackpair):
-                    Logger.error("The devices provided to be paired into SVL does not have any links connected to eachothers")
+                    Logger.error("The devices provided to be paired into SVL does not have any links connected to each others")
                     result=False
                     step.failed("The Prechecks failed. Fix Links before script run", goto = ['CommonCleanup'])
         if not result:
@@ -68,7 +68,8 @@ class svlformation(aetest.Testcase):
     @aetest.test
     def test_validate_console_connectivity_to_switches(self,svl_handle):
         '''
-            This is a precheck test to check if connesol connectivity is established with teh devoces
+            This is a precheck test to check if connesol connectivity is established with the devices.
+            If the console connectivity is not reached, script will not proceed further. User should fix console inputs and rerun.
         '''
         steps = Steps()
         result=True
@@ -82,6 +83,12 @@ class svlformation(aetest.Testcase):
 
     @aetest.test
     def test_preches_validate_platform_and_version_match_and_minimum_version_req(self,svl_handle):
+        '''
+            This is a precheck test to validate:
+            1. If the switches have the minimum version supported for Stackwise Virtual.
+            2. If the platform type of the two switches part of stackwise Virtual are same.
+            3. If the Software version of both switches are same. 
+        '''
         steps = Steps()
         result=True
         for stackpair in svl_handle.device_pair_list:
@@ -93,8 +100,17 @@ class svlformation(aetest.Testcase):
             self.failed("Minimum Version and Platform check failed.", goto = ['CommonCleanup'])
 
     @aetest.test
-    def test_configure_stackwise_virtual_configs_and_validate(self,svl_handle):
+    def test_configure_stackwise_virtual_configs_bringup_stackwiseVirtual(self,svl_handle):
         '''
+            This is main test to perform confis for switches and reload step by step to form the stack wise virtual.
+            1. Step1: Configure Switch number, Switch prioeiry, Stackwise Virtual Domain id and Stackwise Virtual global config.
+            2. Step2: Save the configs on both switches and reload for configs to apply.
+            3. Step3: Configure Stackwise virtual links config, links are provided in testbed yaml in topology section each 
+                link should have STACKWISEVIRTUAL-LINK in the link name to be used for stackwise virtual link configs. 
+            4. Step4: Save the configs on both switches and reload for configs to apply.
+            5. Step5: Configure the Dual Active Detection (DAD) links as provided in the testbed yaml under topology section. 
+                Each DAD link should have DAD-LINK in the link name to be configured as Dual Active detection link.
+            6. Step6: Save the configs on both switches and reload for configs to apply.
         '''
         steps = Steps()
         result=True
@@ -123,17 +139,38 @@ class svlformation(aetest.Testcase):
                 if not svl_handle.save_config_and_reload(stackpair):
                     result=False
                     step.failed("Step6 Save config and reload the switches, failed.")
-
-                if not svl_handle.configure_svl_step4_validate_svl(stackpair):
-                    result=False
-                    step.failed("Step7 Validate Stackwise Virtual, failed.")
-
         if not result:
-            self.failed("Minimum Version and Platform check failed.")
+            self.failed("Stackwise Virtual configuration failed on one or more switches. ")
+        else:
+            self.passed("Stackwise Virtual configurations are success.")
 
-    @aetest.cleanup
-    def cleanup(self):
-        pass
+    @aetest.test
+    def test_validate_configs_for_stackwise_virtual_pair(self,svl_handle):
+        '''
+            Validate configs for Stackwise Virtual Pair switches.
+        '''
+        result=True
+        steps = Steps()
+        for stackpair in svl_handle.device_pair_list:
+            with steps.start("Validation of Stackwise Virtual configs",continue_= True) as step:
+                if not svl_handle.check_stackwise_virtual_confgured(stackpair):
+                    result=False
+                    step.failed("Stackwise Virtual configs are still present on one or both of the switches of stackpair: {}".format(stackpair))
+        if not result:
+            self.failed("Stackwise virtual configs are not present on the switches")
+        else:
+            self.passed("Stackwise Virtual configuration are present on both switches as expected.")
+
+    @aetest.test
+    def test_configure_stackwise_virtual_configs_and_validate(self,svl_handle):
+        '''
+            Validate the 
+        '''
+        for stackpair in svl_handle.device_pair_list:            
+            if not svl_handle.validate_stackwise_SVL_and_DAD_links_status(stackpair):
+                self.failed("Stackwise Virtual link status validation failed for stack pair: {}".format(stackpair))
+            else:
+                Logger.info("Stackwise Virtual link status validation is success for stackpair: {}".format(stackpair))
     
 class CommonCleanup(aetest.CommonCleanup):
     '''CommonCleanup Section
@@ -141,6 +178,9 @@ class CommonCleanup(aetest.CommonCleanup):
     < common cleanup docstring >
 
     '''
+    @aetest.cleanup
+    def cleanup(self):
+        Logger.info("CLeanup, Keeping configs for manual lookup.")
 
     # uncomment to add new subsections
     # @aetest.subsection
