@@ -11,10 +11,10 @@ SVLVERSION_9400="16.9.1"
 SVLVERSION_9600="16.12.1"
 
 PLATFORMVERSIONREFERENCE=[
-	{	"platform": ["C9500-40X","C9300-24P"],
+	{	"platform": ["C9500-40X","C5900-16X","C5900-12Q","C9500-24Q"],
 		"ref_version": SVLVERSION_9500
 	},
-	{	"platform": ["C9407R"],
+	{	"platform": ["C9407R","C9400R"],
 		"ref_version": SVLVERSION_9400
 	},
 	{	"platform": ["C9606R"],

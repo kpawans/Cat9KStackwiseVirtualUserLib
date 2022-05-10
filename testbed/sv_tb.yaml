@@ -10,7 +10,7 @@ testbed:
         line: linepassword
     custom:
         switchstackinggroups: [
-            {"numberofswitches":2, "switchs": ["SWITCH-1","SWITCH-2"]} ]
+            {"numberofswitches":2, "domainNumber":2, "switchs": ["SWITCH-1","SWITCH-2"]} ]
 devices:
     SWITCH-1:
         os: 'iosxe'

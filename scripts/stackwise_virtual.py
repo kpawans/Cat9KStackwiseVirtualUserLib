@@ -22,7 +22,7 @@ from pyats.aetest.steps import Steps
 
 class CommonSetup(aetest.CommonSetup):
     @aetest.subsection
-    def commonsetup_initialize testbed(self, testbed):
+    def commonsetup_initialize_testbed(self, testbed):
         '''
             Establishes connection to all your testbed devices.
         '''
@@ -178,9 +178,6 @@ class CommonCleanup(aetest.CommonCleanup):
     < common cleanup docstring >
 
     '''
-    @aetest.cleanup
-    def cleanup(self):
-        Logger.info("CLeanup, Keeping configs for manual lookup.")
 
     # uncomment to add new subsections
     # @aetest.subsection
