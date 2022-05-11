@@ -1,14 +1,15 @@
 '''
-svl_remove_job.py
+svl_job.py
 
 This job is to launch the script: scripts/stackwise_virtual.py.
 
 This should be run in your python environment with pyats installed. 
 
 Run this job from parent directory:
-    pyats run job job/svl_remove_job.py --testbed ./testbed/9500_sv_tb.yaml
+    pyats run job job/svl_job.py --testbed ./testbed/9500_sv_tb.yaml
 
 Support Platform: Linux/MAC/Ubuntu
+
 '''
 # see https://pubhub.devnetcloud.com/media/pyats/docs/easypy/jobfile.html
 # for how job files work
@@ -32,5 +33,5 @@ def main(runtime):
     
     # run script
     run(testscript= os.path.join(SCRIPT_PATH, 
-                                 'scripts/remove_stackwise_virtual.py'),
+                                 'scripts/stackwise_virtual.py'),
         runtime = runtime)

@@ -1,8 +1,8 @@
 '''
-stackwise_virtual.py
-
-This script is to setup a new stackwise-virtual HA pair from two independent 9500, 9600 or 9400 switches. 
-The Switches access and connection details need to be provided in the testbed file. The sample testbed file is present in 
+update_links_on_stackwise_virtual.py
+This script is for updateing the existing connections, adding/removing  links to stackwise-virtual links or Dualactive-detection link.
+The links combination provided in testbed is assumed updated and to be reflected on the Stack.
+The switches access and connection details need to be provided in the testbed file. The sample testbed file is present in 
 testbed directory for 9500/9600 switches types.
 
 '''
@@ -65,7 +65,7 @@ class svlformation_and_validation(aetest.Testcase):
                 if not svl_handle.check_links(stackpair):
                     Logger.error("The devices provided to be paired into SVL does not have any links connected to each others")
                     result=False
-                    step.failed("The Prechecks failed. Fix Links before script run", goto = ['common_cleanup'])
+                    step.failed("The Prechecks failed. Fix Links before script run", goto = ['CommonCleanup'])
         if not result:
             self.failed("Precheck for links correctness failed on some of the Stackwise Virtual Pairs")
 
@@ -83,70 +83,38 @@ class svlformation_and_validation(aetest.Testcase):
                     result=False
                     step.failed("Could not connect to devices, Can not proceed. for stackwise virtual pair :{}".format(stackpair))
         if not result:
-            self.failed("Console connectivity to some or all of the devices could not  be established", goto = ['common_cleanup'])
-
-    @aetest.test
-    def test_preches_validate_platform_and_version_match_and_minimum_version_req(self,svl_handle):
-        '''
-            This is a precheck test to validate:
-            1. If the switches have the minimum version supported for Stackwise Virtual.
-            2. If the platform type of the two switches part of stackwise Virtual are same.
-            3. If the Software version of both switches are same. 
-        '''
-        steps = Steps()
-        result=True
-        for stackpair in svl_handle.device_pair_list:
-            with steps.start("Platform and Version req precheck",continue_= True) as step:
-                if not svl_handle.check_min_version_req(stackpair):
-                    result=False
-                    step.failed("Minimum Version and Stack status failed for switchpair:{}, fix it before moving further".format(stackpair))
-        if not result:
-            self.failed("Minimum Version and Platform check failed. Fix it before rerun, run remove_stackwise_virtual.py to cleanup existing config", goto = ['common_cleanup'])
+            self.failed("Console connectivity to some or all of the devices could not  be established", goto = ['CommonCleanup'])
 
     @aetest.test
     def test_configure_stackwise_virtual_configs_bringup_stackwiseVirtual(self,svl_handle):
         '''
             This is main test to perform confis for switches and reload step by step to form the stack wise virtual.
-            1. Step1: Configure Switch number, Switch prioeiry, Stackwise Virtual Domain id and Stackwise Virtual global config.
-            2. Step2: Save the configs on both switches and reload for configs to apply.
-            3. Step3: Configure Stackwise virtual links config, links are provided in testbed yaml in topology section each 
+            1. Step1: Configure Stackwise virtual links config, links are provided in testbed yaml in topology section each 
                 link should have STACKWISEVIRTUAL-LINK in the link name to be used for stackwise virtual link configs. 
-            4. Step4: Save the configs on both switches and reload for configs to apply.
-            5. Step5: Configure the Dual Active Detection (DAD) links as provided in the testbed yaml under topology section. 
+            2. Step2: Save the configs on both switches and reload for configs to apply.
+            3. Step3: Configure the Dual Active Detection (DAD) links as provided in the testbed yaml under topology section. 
                 Each DAD link should have DAD-LINK in the link name to be configured as Dual Active detection link.
-            6. Step6: Save the configs on both switches and reload for configs to apply.
+            4. Step7: Save the configs on both switches and reload for configs to apply.
         '''
         steps = Steps()
         result=True
         for stackpair in svl_handle.device_pair_list:
             with steps.start("Stackwise Virtual config") as step:
-                if not svl_handle.configure_svl_step1(stackpair):
+                if not svl_handle.default_svl_dad_interfaces(stackpair['stackwiseVirtualDev']):
                     result=False
-                    step.failed("Step1 Configure the step 1 config, switch number and domain configs on switches, failed")
-
-                if not svl_handle.save_config_and_reload(stackpair,reloadAsync=True):
-                    result=False
-                    step.failed("Step2 Save config and reload the switches, failed")
+                    step.failed("Step1 Configure the step1 config, switch number and domain configs on switches, failed")
 
                 if not svl_handle.configure_svl_step2_svllinkconfig(stackpair):
                     result=False
-                    step.failed("Step3 Config stackwise Virtual links on switches, failed.")
+                    step.failed("Step2 Config stackwise Virtual links on switches, failed.")
+
+                if not svl_handle.configure_svl_step3_dad_linkconfig(stackpair):
+                    result=False
+                    step.failed("Step3 Configuring stackwise Virtual Dual Active Detection Links, failed.")
 
                 if not svl_handle.save_config_and_reload(stackpair,reloadAsync=True):
                     result=False
                     step.failed("Step4 Save config and reload the switches, failed.")
-
-                if not svl_handle.connect_to_stackpair(stackpair):
-                    result=False
-                    step.failed("Could not connect to devices, Can not proceed. for stackwise virtual pair :{}".format(stackpair))
-
-                if not svl_handle.configure_svl_step3_dad_linkconfig(stackpair):
-                    result=False
-                    step.failed("Step5 Configuring stackwise Virtual Dual Active Detection Links, failed.")
-
-                if not svl_handle.save_config_and_reload(stackpair,reloadAsync=True):
-                    result=False
-                    step.failed("Step6 Save config and reload the switches, failed.")
         if not result:
             self.failed("Stackwise Virtual configuration failed on one or more switches. ")
         else:
@@ -170,17 +138,17 @@ class svlformation_and_validation(aetest.Testcase):
             self.passed("Stackwise Virtual configuration are present on both switches as expected.")
 
     @aetest.test
-    def test_validate_configs_for_stackwise_dualauctive_detection(self,svl_handle):
+    def test_configure_stackwise_virtual_configs_and_validate(self,svl_handle):
         '''
             Validate the 
         '''
         for stackpair in svl_handle.device_pair_list:            
             if not svl_handle.validate_stackwise_SVL_and_DAD_links_status(stackpair):
-                self.failed("Stackwise Virtual dual active link status check failed: {}".format(stackpair))
+                self.failed("Stackwise Virtual link status validation failed for stack pair: {}".format(stackpair))
             else:
-                Logger.info("Stackwise Virtual dual active link status is success for stackpair: {}".format(stackpair))
+                Logger.info("Stackwise Virtual link status validation is success for stackpair: {}".format(stackpair))
     
-class common_cleanup(aetest.CommonCleanup):
+class CommonCleanup(aetest.CommonCleanup):
     @aetest.subsection
     def disconnect_from_devices(self, svl_handle):
         logging.info("Disconnected from the device...Into common cleanup section")

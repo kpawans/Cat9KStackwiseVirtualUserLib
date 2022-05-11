@@ -1,5 +1,9 @@
 '''
-ls.py
+remove_stackwise_virtual.py
+
+This script is ro remove the stackwise virtual configs from a Stackwise Virtual HA Switch.
+The Switches access and connection details need to be provided in the testbed file. The sample testbed file is present in 
+testbed directory for 9500/9600 switches types.
 
 '''
 # see https://pubhub.devnetcloud.com/media/pyats/docs/aetest/index.html
@@ -81,7 +85,7 @@ class svl_config_removal(aetest.Testcase):
                     result=False
                     step.failed("Could not connect to devices, Can not proceed. for stackwise virtual pair :{}".format(stackpair))
         if not result:
-            self.failed("Console connectivity to some or all of the devices could not  be established", goto = ['CommonCleanup'])
+            self.failed("Console connectivity to some or all of the devices could not  be established", goto = ['common_cleanup'])
 
     @aetest.test
     def test_validate_configs_for_stackwise_virtual_pair(self,svl_handle):
@@ -96,7 +100,7 @@ class svl_config_removal(aetest.Testcase):
                     result=False
                     step.failed("Stackwise Virtual configs are not present on one or both of the switches of stackpair: {}".format(stackpair))
         if not result:
-            self.failed("Validation of Stackwise Virtual config failed ", goto = ['CommonCleanup'])
+            self.failed("Validation of Stackwise Virtual config failed ", goto = ['common_cleanup'])
 
     @aetest.test
     def test_remove_stackwiseVirtual_configs_and_make_them_independent(self,svl_handle):
@@ -115,19 +119,34 @@ class svl_config_removal(aetest.Testcase):
                     result=False
                     step.failed("StackwiseVirtual Configs  removal failed from the one of both switches.")
 
-                elif not svl_handle.save_config_and_reload(stackpair):
+                if not svl_handle.save_config_and_reload(stackpair,reloadAsync=True):
                     result=False
                     step.failed("StackwiseVirtual save config and reload, for stackwise virtual config is failed on one or both switches.")
                 else:
                     Logger.info("StackwiseVirtual configs are successfully removed from the switches.")
 
         if not result:
-            self.failed("Stackwise Virtual config removal failed ", goto = ['CommonCleanup'])
+            self.failed("Stackwise Virtual config removal failed ", goto = ['common_cleanup'])
         else:
             self.passed("successfully removed stackwise virtual configs from all the stack pairs.")
 
     @aetest.test
-    def test_validate_configs_for_stackwise_virtual_pair_removed(self,svl_handle):
+    def test_reconnect_to_switches_after_removing_configs(self,svl_handle):
+        '''
+            This is a precheck test to check if connesol connectivity is established with teh devoces
+        '''
+        steps = Steps()
+        result=True
+        for stackpair in svl_handle.device_pair_list:
+            with steps.start("Validation of console connectivity on Stackwise Virtual device pairs",continue_= True) as step:
+                if not svl_handle.connect_to_stackpair(stackpair):
+                    result=False
+                    step.failed("Could not connect to devices, Can not proceed. for stackwise virtual pair :{}".format(stackpair))
+        if not result:
+            self.failed("Console connectivity to some or all of the devices could not  be established", goto = ['common_cleanup'])
+
+    @aetest.test
+    def test_validate_configs_removed_for_stackwise_virtual_pair(self,svl_handle):
         '''
             This is a precheck test to verify if the stackwise virtual configs are presnt on the switches
         '''
@@ -145,18 +164,11 @@ class svl_config_removal(aetest.Testcase):
     def cleanup(self):
         pass
     
+class common_cleanup(aetest.CommonCleanup):
+    @aetest.subsection
+    def disconnect_from_devices(self, svl_handle):
+        logging.info("Disconnected from the device...Into common cleanup section")
 
-class CommonCleanup(aetest.CommonCleanup):
-    '''CommonCleanup Section
-
-    < common cleanup docstring >
-
-    '''
-
-    # uncomment to add new subsections
-    # @aetest.subsection
-    # def subsection_cleanup_one(self):
-    #     pass
 
 if __name__ == '__main__':
     # for stand-alone execution

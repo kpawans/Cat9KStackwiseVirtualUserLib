@@ -8,22 +8,32 @@ testbed:
         tacacs: tacacspassword
         enable: enablepassword
         line: linepassword
+    #Details to form stackwise virtual Paris. leave it ok with default.
+    #platformType should be 9500 for all 9500/9500H platform.
+    #platformType should be 9600 for all 9600 based platform.
+    #platformType should be 9400 for all 9400 based platform.
+    # for SVL numberofswitches are always 2
+    #domainNumber is svl domain number: valies from 1 to 15
+    #The switches names which will form the SVL should match with device defeiniton in devices section
     custom:
         switchstackinggroups: [
-            {"numberofswitches":2, "domainNumber":2, "switchs": ["SWITCH-1","SWITCH-2"]} ]
+            {   
+                "numberofswitches":2, 
+                "domainNumber":2, 
+                "platformType": "9500",
+                "switchs": ["SWITCH-1","SWITCH-2"]
+            }
+        ]
 devices:
     SWITCH-1:
         os: 'iosxe'
         type: 'IOS-XE'
         custom:
             switchnumber: 1
+            switchpriority: 15
         alias: SWITCH-1
-        credentials:
-            default:
-                password: cisco
-                username: cisco
-            tacacs: "%{testbed.tacacs}"
-            passwords: "%{testbed.passwords}"
+        tacacs: "%{testbed.tacacs}"
+        passwords: "%{testbed.passwords}"
         connections:
             defaults: {class: 'unicon.Unicon'}
             a:
@@ -34,19 +44,15 @@ devices:
                 terminal_server_username: tsusername
                 terminal_server_password: tspassword
                 terminal_server_enable_password: tsenablepass
-
     SWITCH-2:
         os: 'iosxe'
         type: 'IOS-XE'
         custom:
             switchnumber: 2
+            switchpriority: 10
         alias: SWITCH-2
-        credentials:
-            default:
-                password: cisco
-                username: cisco
-            tacacs: "%{testbed.tacacs}"
-            passwords: "%{testbed.passwords}"
+        tacacs: "%{testbed.tacacs}"
+        passwords: "%{testbed.passwords}"
         connections:
             a:
                 protocol: telnet
@@ -56,7 +62,17 @@ devices:
                 terminal_server_username: tsusername
                 terminal_server_password: tspassword
                 terminal_server_enable_password: tsenablepass
-
+#Topology Section
+#===================================================================================================
+#  
+#   |-------|--------Dual Active Detection Link (DAD-LINK)------------------|-------|
+#   |Switch1|----------Stackwise-Virtual link (STACKWISEVIRTUAL-LINK)-------|Switch2|
+#   |-------|----------Stackwise-Virtual link (STACKWISEVIRTUAL-LINK)-------|-------|
+#
+#    Each Dual Active Detection must have "DAD-LINK" keyword in link description text
+#    Each Dual Stackwise-virtual  must have "STACKWISEVIRTUAL-LINK" keyword in link description text
+#    Link number for switch 2 should have 2 as first index. 1/0/24  -----> 2/0/24
+#===================================================================================================
 topology:
   SWITCH-1:
     interfaces:
@@ -81,3 +97,5 @@ topology:
       TenGigabitEthernet2/0/40:
         link: STACKWISEVIRTUAL-LINK-2
         type: ethernet
+
+#============End

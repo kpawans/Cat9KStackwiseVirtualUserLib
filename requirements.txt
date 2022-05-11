@@ -1,0 +1,5 @@
+# Proxies may be necessary to run installation successfully
+--index-url http://pyats-pypi.cisco.com
+--trusted-host pyats-pypi.cisco.com
+pyats
+
