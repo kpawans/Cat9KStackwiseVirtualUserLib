@@ -7,8 +7,7 @@ import time
 from unicon.eal.dialogs import Statement, Dialog
 from pyats.topology import Device
 import traceback
-
-#Global Constants
+#=================================Global Constants=====
 SVLVERSION_9500="16.8.1"
 SVLVERSION_9400="16.9.1"
 SVLVERSION_9600="16.12.1"
@@ -31,13 +30,12 @@ SUPPORTED_PLATFORMS_LIST=[9500, 9400, 9600, "9500", "9400", "9600"]
 #Logger initize
 Logger = logging.getLogger(__name__)
 
-#Device Interactive dialog confirmations
+#================Device Interactive dialog confirmations for UNICON to provide cli user confirmations
 DIALOG_CONFIRM = Dialog([
         Statement(pattern=r'^.*continue\?\[y/n\]\?\s*\[yes\]\:.*$',
                   action="sendline(yes)",
                   loop_continue=True,
                   continue_timer=False)])
-
 DIALOG_CONFIRM1 =  Dialog([
         Statement(pattern=r"^.*continue\?\[y/n\]\?.*$",
                   action="sendline(y)",
@@ -47,9 +45,12 @@ DIALOG_CONFIRM1 =  Dialog([
                   action="sendline(y)",
                   loop_continue=True,
                   continue_timer=False)])
-
+#=========================Class/Functions===============
 #Multithread run
 class MultiUserThreadWithReturn(Thread):
+    '''
+        Multithread clas to run functions in parallel.
+    '''
     def __init__(self, group=None, target=None, name=None,
                  args=(), kwargs={}, Verbose=None, daemon=None):
         Thread.__init__(self, group, target, name, args, kwargs, daemon=daemon)
@@ -68,11 +69,22 @@ class MultiUserThreadWithReturn(Thread):
 
 #Class for SVL main object
 class StackWiseVirtual(object):
+    '''
+        This is the main clas for modeling a stackwise virtual and perform config/update/delete operation
+    '''
     def __init__(self, testbed):
         self.testbed=testbed
         self.device_pair_list=[]
 
     def get_device_pairs(self):
+        '''
+            USAGES: This function 
+                    1. From the yaml input file, identify the stackpair member. 
+                    2. Create a device object for stackpair as single HA device.
+                    3. Combines the console connection to single pair from both member stack members.
+            INPUT:  Stackpair
+            Returns: True if success, False if Fails
+        '''
         for pair in self.testbed.custom['switchstackinggroups']:
             if pair["numberofswitches"] != len(pair["switchs"]): 
                 Logger.error(
@@ -110,12 +122,24 @@ class StackWiseVirtual(object):
             self.device_pair_list.append(dev_stack)
 
     def get_device_version(self, dev):
+        '''
+            USAGES: This function 
+                    1. Subroutine gets the device software version and Platform model number
+            INPUT:  Stackpair
+            Returns: True if success, False if Fails
+        '''
         output=self.testbed.devices[dev].execute("show version")
         version = re.findall("Cisco IOS XE Software, Version\s+(\S+)",str(output))[0]
         model_number = re.findall("Model Number\s+:\s+(\S+)",str(output))[0]
         return dict(version=version,model=model_number)
 
     def check_links(self, stackpair):
+        '''
+            USAGES: This function 
+                    1. Performs pre-check if the links defined has a remote endpoint for all links types.
+            INPUT:  Stackpair
+            Returns: True if success, False if Fails
+        '''
         links_count=0
         for links in self.testbed.devices[stackpair["switch1"]]:
             if self.testbed.devices[stackpair["switch2"]] in links.remote_devices:
@@ -128,6 +152,14 @@ class StackWiseVirtual(object):
             return False    
 
     def check_min_version_req(self, stackpair):
+        '''
+            USAGES: This function 
+                    1. Performs pre-check if the stack members has minimum required Software version
+                    2. If the platform types of the stackmember are matching.
+                    3. if the software version on both stackmembers are same.
+            INPUT:  Stackpair
+            Returns: True if success, False if Fails
+        '''
         #Check for switch 1.
         if not self.connect_to_stackpair(stackpair):
             Logger.error("Could not connect to devices, Can not proceed.")
@@ -169,6 +201,16 @@ class StackWiseVirtual(object):
         pass
 
     def connect_to_stackpair(self,stackpair, retry=2):
+        '''
+            USAGES: This function 
+                    1. Connect the console connections to Stack after stack is formed
+                    2. If Stack is not yet formed, it will login to indivisual StackMember
+                    3. It will mark the stackpair["status"] to True or False based on if the stack is formed or not. 
+                       If stackpair["status"] is set to true, the console connection is connected to Stach chassis in HA mode and not
+                       to indivisual members.
+            INPUT:  Stackpair
+            Returns: True if success, False if Fails
+        '''
         result=True
         if stackpair['pairinfo']["platformType"] in SUPPORTED_PLATFORMS_LIST: 
             try:
@@ -226,11 +268,23 @@ class StackWiseVirtual(object):
         return result
 
     def connect_to_stackwiseVirtual(self,stackpair):
+        '''
+            USAGES: This function 
+                    1. Connect the console connections to Stack after stack is formed
+            INPUT:  Stackpair
+            Returns: True if success, False if Fails
+        '''
         if not stackpair["stackwiseVirtualDev"].connected:
             stackpair["stackwiseVirtualDev"].connect()
         return True
 
     def disconnect_from_stackpair(self,stackpair):
+        '''
+            USAGES: This function 
+                    1. Disconnect the console connections to Stack or its Members
+            INPUT:  Stackpair
+            Returns: True if success, False if Fails
+        '''
         if stackpair['stackwiseVirtualDev'].connected:
             stackpair['stackwiseVirtualDev'].disconnect()
         if self.testbed.devices[stackpair["switch1"]].connected:
@@ -240,6 +294,13 @@ class StackWiseVirtual(object):
         return True
 
     def save_config_and_reload(self, stackpair, reloadAsync=False,timeout=MAXRELOADTIMEOUT):
+        '''
+            USAGES: This function 
+                    1. Saves the config on stack member if the stack is not formed, or on the stack if stack is already formed.
+                    2. Reload the switch.
+            INPUT:  Stackpair, reloadAsync =(True or False) if the stack member to be reloaded in parallel or sequential
+            Returns: True if success, False if Fails
+        '''
         #Reload bothe switches
         if reloadAsync:
             if stackpair['pairinfo']["platformType"] in SUPPORTED_PLATFORMS_LIST and stackpair["status"]: 
@@ -274,6 +335,14 @@ class StackWiseVirtual(object):
         return True
 
     def configure_svl_step1(self, stackpair):
+        '''
+            USAGES:This function Configures:
+                   1. Switch number
+                   2. Switch Priority
+                   3. Stackwise Virtual Domain
+            INPUT: Stackpair
+            Returns: True if success, False if Fails
+        '''
         if "domainNumber" in stackpair['pairinfo'].keys():
             domainNumber = stackpair['pairinfo']["domainNumber"]
         else:
@@ -324,6 +393,11 @@ class StackWiseVirtual(object):
         return True
 
     def configure_svl_step2_svllinkconfig(self, stackpair):
+        '''
+            USAGES:This function Configures the stackwise-virtual link config on the stack.
+            INPUT: Stackpair
+            Returns: True if success, False if Fails
+        '''
         if not self.connect_to_stackpair(stackpair):
             Logger.error("Could not connect to devices, Can not proceed.")
             return False
@@ -361,6 +435,11 @@ class StackWiseVirtual(object):
         return True
 
     def configure_svl_step3_dad_linkconfig(self, stackpair):
+        '''
+            USAGES:This function Configures the DAD link config on the stack.
+            INPUT: Stackpair
+            Returns: True if success, False if Fails
+        '''
         if not self.connect_to_stackpair(stackpair):
             Logger.error("Could not connect to devices, Can not proceed.")
             return False
@@ -396,10 +475,12 @@ class StackWiseVirtual(object):
 
     def disable_svl_config(self, stackpair):
         '''
-            This function removes the SVL configs from stackwise virtual switches. 
-            1. Step1: Remove Dual Active detection configs.
-            2. Step2: Remove stackwise Virtual link configs.
-            3. Step3: Remove stackwise Virtual  config.
+            USAGES:This function removes the SVL configs from stackwise virtual switches. 
+                    1. Step1: Remove Dual Active detection configs.
+                    2. Step2: Remove stackwise Virtual link configs.
+                    3. Step3: Remove stackwise Virtual  config.
+            INPUT: Stackpair
+            Returns: True if success, False if Fails
         '''
         if not self.connect_to_stackpair(stackpair):
             Logger.error("Could not connect to devices, Can not proceed.")
@@ -442,7 +523,9 @@ class StackWiseVirtual(object):
 
     def validate_stackwise_SVL_and_DAD_links_status(self,stackpair,retry=10):
         '''
-        Validate the link status in the Stackwise Virtual
+            USAGES: Validate the link status in the Stackwise Virtual and Dual Active detection
+            INPUT: Stackpair
+            Returns: True if success, False if Fails
         '''
         result=True
         if stackpair['pairinfo']["platformType"] in SUPPORTED_PLATFORMS_LIST and stackpair["status"]:
@@ -537,7 +620,9 @@ class StackWiseVirtual(object):
 
     def check_stackwise_virtual_confgured(self,stackpair):
         '''
-        Validate the link status in the Stackwise Virtual
+            USAGES: Validate if the device has stackwise-virtual config present on the stack devices or indivisul switches
+            INPUT: Stackpair
+            Returns: True if success, False if Fails
         '''
         result=True
         if stackpair['pairinfo']["platformType"] in SUPPORTED_PLATFORMS_LIST and stackpair["status"]:
@@ -560,9 +645,11 @@ class StackWiseVirtual(object):
         return result
 
     def configure_svl(self, stackpair):
-        #Validations
         '''
-            Configure Stackwise SVL, All Steps in 1 functions good for multiple SVL config in parallel run
+            USAGES: Configure Stackwise SVL, All Steps in 1 API/Function good for multiple SVL config in parallel run.
+            INPUT: Stackpair
+            Output: Fully configured Stackwise-Virtual, 
+            Returns: True if success, False if Fails
         '''
         if stackpair['switch1'] == stackpair['switch2']:
             Logger.error("The Device Pair has same name, invalid combination")
@@ -597,6 +684,12 @@ class StackWiseVirtual(object):
         return True
 
     def default_svl_dad_interfaces(self, oRtr):
+        '''
+            USAGES: This Function removes the existing stackwise-virtual link and Dual-active-detection links configs.
+            INPUT: It needs the Stackwise-Virtual switch as Device object on which links configs to be removed.
+            OUTPUT: The Stackwise-Virtual and Dual Active Detection link configs will be reset on interfaces.
+            Returns: True if success, False if Fails
+        '''
         pattern1='interface (\S+)[\n\r][^\/]+\s+stackwise-virtual link 1'
         pattern2='interface (\S+)[\n\r][^\/]+\s+stackwise-virtual dual-active-detection'
         cmd = "show running-config  | sec interface "
@@ -606,7 +699,7 @@ class StackWiseVirtual(object):
         Logger.info(svllinks)
         for cmd in svllinks:
             Logger.info("\nDefaulting the SVL Interface {}".format(cmd))
-            oRtr.configure("interface {0} \n stackwise-virtual link 1".format(cmd))
+            oRtr.configure("interface {0} \n no stackwise-virtual link 1".format(cmd))
         Logger.info(dadlinks)
         for cmd in dadlinks:
             Logger.info("\nDefaulting the SVL Interface {}".format(cmd))
@@ -619,8 +712,11 @@ class StackWiseVirtual(object):
 #==========================================================
 def reload_switch_asynchronously(oRtr):
     '''
-        save config and reload
-        wr erase
+        USAGES: SAVE config on a switch or stack and reloads but does not wait for it to comeback up.
+                Use other wait or retry method to reconnect after device is up.
+        INPUT: switch/Stack Device object
+        OUTPUT: Device is reloaded
+        Returns: True if success, False if Fails
     '''
     try:
         dialog = Dialog([

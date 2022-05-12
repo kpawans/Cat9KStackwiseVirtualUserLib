@@ -98,13 +98,13 @@ topology:
         type: ethernet
   SWITCH-2:
     interfaces:
-      TenGigabitEthernet2/0/24:
+      TwentyFiveGigE2/1/0/48:
         link: DAD-LINK-1
         type: ethernet
       TwentyFiveGigE2/1/0/25:
         link: STACKWISEVIRTUAL-LINK-1
         type: ethernet
-      TwentyFiveGigE2/1/0/48:
+      TwentyFiveGigE2/1/0/31:
         link: STACKWISEVIRTUAL-LINK-2
         type: ethernet
 

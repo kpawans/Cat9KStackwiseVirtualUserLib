@@ -33,5 +33,5 @@ def main(runtime):
     
     # run script
     run(testscript= os.path.join(SCRIPT_PATH, 
-                                 'scripts/stackwise_virtual.py'),
+                                 'update_links_on_stackwise_virtual.py'),
         runtime = runtime)
