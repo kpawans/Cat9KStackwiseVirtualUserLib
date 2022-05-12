@@ -343,14 +343,21 @@ class StackWiseVirtual(object):
                                 stackwise-virtual link 1""".format(link.name)
         Logger.info(config1)
         Logger.info(config2)
-        self.testbed.devices[stackpair["switch1"]].configure(config1)
-        self.testbed.devices[stackpair["switch2"]].configure(config2)
 
-        self.testbed.devices[stackpair["switch1"]].execute("show stackwise-virtual")
-        self.testbed.devices[stackpair["switch2"]].execute("show stackwise-virtual")
+        if stackpair['pairinfo']["platformType"] in SUPPORTED_PLATFORMS_LIST and stackpair["status"]:
+            stackpair['stackwiseVirtualDev'].configure(config1)
+            stackpair['stackwiseVirtualDev'].configure(config2)
+            stackpair['stackwiseVirtualDev'].execute("show stackwise-virtual")
+            stackpair['stackwiseVirtualDev'].execute("write memory")
+        else:
+            self.testbed.devices[stackpair["switch1"]].configure(config1)
+            self.testbed.devices[stackpair["switch2"]].configure(config2)
 
-        self.testbed.devices[stackpair["switch1"]].execute("write memory")
-        self.testbed.devices[stackpair["switch2"]].execute("write memory")
+            self.testbed.devices[stackpair["switch1"]].execute("show stackwise-virtual")
+            self.testbed.devices[stackpair["switch2"]].execute("show stackwise-virtual")
+
+            self.testbed.devices[stackpair["switch1"]].execute("write memory")
+            self.testbed.devices[stackpair["switch2"]].execute("write memory")
         return True
 
     def configure_svl_step3_dad_linkconfig(self, stackpair):
@@ -422,13 +429,9 @@ class StackWiseVirtual(object):
                             interface {}
                                 no stackwise-virtual link 1""".format(link.name)
         if stackpair['pairinfo']["platformType"] in SUPPORTED_PLATFORMS_LIST and stackpair["status"]:
-            #stackpair['stackwiseVirtualDev'].configure(config1)
-            #stackpair['stackwiseVirtualDev'].configure(config2)
             self.default_svl_dad_interfaces(stackpair['stackwiseVirtualDev'])
             stackpair['stackwiseVirtualDev'].configure("no stackwise-virtual")
         else:
-            #self.testbed.devices[stackpair["switch1"]].configure(config1)
-            #self.testbed.devices[stackpair["switch2"]].configure(config2)
             self.default_svl_dad_interfaces(self.testbed.devices[stackpair["switch1"]])
             self.default_svl_dad_interfaces(self.testbed.devices[stackpair["switch2"]])
             self.testbed.devices[stackpair["switch1"]].configure("no stackwise-virtual")
