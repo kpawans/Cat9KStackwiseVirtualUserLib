@@ -43,7 +43,7 @@ Topology:
 #Code Checkout:
 Checkout the code with git or download from github directly.
 ```bash
-   git clone git@github.com:kpawans/stackwiseVirtualFormation.git
+   git clone git@github.com:kpawans/Cat9KStackwiseVirtualUserLib.git
    cd stackwiseVirtualFormation
 ```
 #to run the setup installer:
