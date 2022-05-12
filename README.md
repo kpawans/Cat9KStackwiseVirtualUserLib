@@ -1,9 +1,12 @@
 #Version: 1.0
-Status: Working.
-Help: Reachout to pawansi@cisco.com
+
+#Status: Working.
+
+#Help: Reachout to pawansi@cisco.com
+
 Topology reference: https://www.cisco.com/c/dam/en/us/td/i/300001-400000/350001-360000/354001-355000/354879.eps/_jcr_content/renditions/354879.jpg
 
-  
+```bash
    |-------|--------Dual Active Detection Link (DAD-LINK)------------------|-------|
    |Switch1|----------Stackwise-Virtual link (STACKWISEVIRTUAL-LINK)-------|Switch2|
    |-------|----------Stackwise-Virtual link (STACKWISEVIRTUAL-LINK)-------|-------|
@@ -13,6 +16,7 @@ Topology reference: https://www.cisco.com/c/dam/en/us/td/i/300001-400000/350001-
     Link number should switch index appended for each link: 1/0/48  --> for switch1 1/1/0/48
                                                                     --> for switch2 2/1/0/48
 	https://www.cisco.com/c/en/us/td/docs/switches/lan/catalyst9500/software/release/16-11/configuration_guide/ha/b_1611_ha_9500_cg/configuring_cisco_stackwise_virtual.html
+```
 
 #Description:
 1. Creating a Stackwise Virtual from two 9K switches. Details provided in testbed yaml.
@@ -57,6 +61,7 @@ Create or Setup your testbed yaml file for the switch pair. Refer sample file: t
 =============================== A Successfull Sample report will be generated as below========================================================
 
 
+```text
 2022-05-11 13:07:25,285: %UNICON-INFO: +++ SWITCH-1svl with via 'a' and alias 'a': executing command 'show stackwise-virtual' +++
 show stackwise-virtual
 Stackwise Virtual Configuration:
@@ -96,4 +101,5 @@ Dual-Active-Detection Configuration:
 Switch	Dad port			Status
 ------	------------			---------
 1 	TenGigabitEthernet1/0/24  	up     
-2 	TenGigabitEthernet2/0/24  	up     
+2 	TenGigabitEthernet2/0/24  	up 
+```
