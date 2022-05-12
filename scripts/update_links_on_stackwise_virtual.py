@@ -142,7 +142,7 @@ class svlformation_and_validation(aetest.Testcase):
                     result=False
                     step.failed("Step6 Save config and reload the switches, failed.")
         if not result:
-            self.failed("Stackwise Virtual configuration failed on one or more switches. ")
+            self.failed("Stackwise Virtual configuration failed on one or more switches. ", goto = ['common_cleanup'])
         else:
             self.passed("Stackwise Virtual configurations are success.")
 
