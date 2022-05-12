@@ -1,0 +1,182 @@
+testbed:
+    #no need to change
+    name: STACKWISE-VIRTUAL
+    #Provide device credentials to access the device, if switch is not configured, leave it as is.
+    tacacs:
+        login_prompt: "Username:"
+        password_prompt: "Password:"
+        username: sampleuser
+    passwords:
+        tacacs: Sample#1223
+        enable: Cisco#123
+        line: Cisco#123
+    #Details to form stackwise virtual Paris. leave it ok with default.
+    #platformType should be 9500 for all 9500/9500H platform.
+    #platformType should be 9600 for all 9600 based platform.
+    #platformType should be 9400 for all 9400 based platform.
+    # for SVL numberofswitches are always 2
+    #domainNumber is svl domain number: valies from 1 to 15
+    #The switches names which will form the SVL should match with device defeiniton in devices section
+    custom:
+        switchstackinggroups: [
+            {   
+                "numberofswitches":2, 
+                "domainNumber":3, 
+                "platformType": "9600",
+                "switchs": ["SWITCH-1","SWITCH-2"]
+             },
+             {   
+                "numberofswitches":2, 
+                "domainNumber":2, 
+                "platformType": "9500",
+                "switchs": ["SWITCH-3","SWITCH-4"]
+            }
+        ]
+#Devices access details
+#Specify switchpriority and Switchnmber if need to be different. or leave default.
+devices:
+    #Switch1 Details.
+    SWITCH-1:
+        os: 'iosxe'
+        type: 'IOS-XE'
+        custom:
+            switchnumber: 1
+            switchpriority: 15
+        alias: SWITCH-1
+        tacacs: "%{testbed.tacacs}"
+        passwords: "%{testbed.passwords}"
+        connections:
+            defaults: {class: 'unicon.Unicon'}
+            a:
+                #Device Console Access Primary RP. Always have learn_hostname: True
+                protocol: telnet
+                ip: 172.21.236.76
+                port: 2003
+                arguments:
+                    learn_hostname: True
+            #if it is a dual RP device Define the secon console under b:
+            #b:
+            #    protocol: telnet
+            #    ip: 172.21.236.76
+            #    port: 2003
+            #    arguments:
+            #        learn_hostname: True
+    #Switch2 Details.
+    SWITCH-2:
+        os: 'iosxe'
+        type: 'IOS-XE'
+        custom:
+            switchnumber: 2
+            switchpriority: 10
+        alias: SWITCH-2
+        tacacs: "%{testbed.tacacs}"
+        passwords: "%{testbed.passwords}"
+        connections:
+            a:
+                protocol: telnet
+                ip: 172.21.236.76
+                port: 2004
+                arguments:
+                    learn_hostname: True
+
+
+    SWITCH-3:
+        os: 'iosxe'
+        type: 'IOS-XE'
+        custom:
+            switchnumber: 1
+            switchpriority: 15
+        alias: SWITCH-3
+        tacacs: "%{testbed.tacacs}"
+        passwords: "%{testbed.passwords}"
+        connections:
+            defaults: {class: 'unicon.Unicon'}
+            a:
+                protocol: telnet
+                ip: 10.195.243.21
+                port: 2048
+            con_credentials:
+                terminal_server_username: tsusername
+                terminal_server_password: tspassword
+                terminal_server_enable_password: tsenablepass
+    SWITCH-4:
+        os: 'iosxe'
+        type: 'IOS-XE'
+        custom:
+            switchnumber: 2
+            switchpriority: 10
+        alias: SWITCH-4
+        tacacs: "%{testbed.tacacs}"
+        passwords: "%{testbed.passwords}"
+        connections:
+            a:
+                protocol: telnet
+                ip: 10.195.243.21
+                port: 2033
+            con_credentials:
+                terminal_server_username: tsusername
+                terminal_server_password: tspassword
+                terminal_server_enable_password: tsenablepass
+
+#Topology Section
+#===================================================================================================
+#  
+#   |-------|--------Dual Active Detection Link (DAD-LINK)------------------|-------|
+#   |Switch1|----------Stackwise-Virtual link (STACKWISEVIRTUAL-LINK)-------|Switch2|
+#   |-------|----------Stackwise-Virtual link (STACKWISEVIRTUAL-LINK)-------|-------|
+#
+#    Each Dual Active Detection must have "DAD-LINK" keyword in link description text
+#    Each Dual Stackwise-virtual  must have "STACKWISEVIRTUAL-LINK" keyword in link description text
+#    Link number should switch index appended for each link: 1/0/48  --> for switch1 1/1/0/48
+#                                                                    --> for switch2 2/1/0/48
+#===================================================================================================
+topology:
+  SWITCH-1:
+    interfaces:
+      TwentyFiveGigE1/1/0/48:
+        link: DAD-LINK-1
+        type: ethernet
+      TwentyFiveGigE1/1/0/25:
+        link: STACKWISEVIRTUAL-LINK-1
+        type: ethernet
+      TwentyFiveGigE1/1/0/31:
+        link: STACKWISEVIRTUAL-LINK-2
+        type: ethernet
+  SWITCH-2:
+    interfaces:
+      TwentyFiveGigE2/1/0/48:
+        link: DAD-LINK-1
+        type: ethernet
+      TwentyFiveGigE2/1/0/25:
+        link: STACKWISEVIRTUAL-LINK-1
+        type: ethernet
+      TwentyFiveGigE2/1/0/31:
+        link: STACKWISEVIRTUAL-LINK-2
+        type: ethernet
+
+  SWITCH-3:
+    interfaces:
+      TenGigabitEthernet1/0/24:
+        link: DAD-LINK-1
+        type: ethernet
+      TenGigabitEthernet1/0/33:
+        link: STACKWISEVIRTUAL-LINK-1
+        type: ethernet
+      TenGigabitEthernet1/0/40:
+        link: STACKWISEVIRTUAL-LINK-2
+        type: ethernet
+
+  SWITCH-4:
+    interfaces:
+      TenGigabitEthernet2/0/24:
+        link: DAD-LINK-1
+        type: ethernet
+      TenGigabitEthernet2/0/33:
+        link: STACKWISEVIRTUAL-LINK-1
+        type: ethernet
+      TenGigabitEthernet2/0/40:
+        link: STACKWISEVIRTUAL-LINK-2
+        type: ethernet
+
+#============End
+#============End
