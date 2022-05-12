@@ -86,6 +86,21 @@ class svlformation_and_validation(aetest.Testcase):
             self.failed("Console connectivity to some or all of the devices could not  be established", goto = ['CommonCleanup'])
 
     @aetest.test
+    def test_validate_configs_for_stackwise_virtual_pair(self,svl_handle):
+        '''
+            This is a precheck test to verify if the stackwise virtual configs are presnt on the switches
+        '''
+        result=True
+        steps = Steps()
+        for stackpair in svl_handle.device_pair_list:
+            with steps.start("Validation of Stackwise Virtual status before removing config",continue_= True) as step:
+                if not svl_handle.check_stackwise_virtual_confgured(stackpair):
+                    result=False
+                    step.failed("Stackwise Virtual configs are not present on one or both of the switches of stackpair: {}".format(stackpair))
+        if not result:
+            self.failed("Validation of Stackwise Virtual config failed ", goto = ['common_cleanup'])
+            
+    @aetest.test
     def test_configure_stackwise_virtual_configs_bringup_stackwiseVirtual(self,svl_handle):
         '''
             This is main test to perform confis for switches and reload step by step to form the stack wise virtual.
@@ -144,7 +159,7 @@ class svlformation_and_validation(aetest.Testcase):
                     result=False
                     step.failed("Stackwise Virtual configs are still present on one or both of the switches of stackpair: {}".format(stackpair))
         if not result:
-            self.failed("Stackwise virtual configs are not present on the switches")
+            self.failed("Stackwise virtual configs are not present on the switches", goto = ['common_cleanup'])
         else:
             self.passed("Stackwise Virtual configuration are present on both switches as expected.")
 
@@ -159,7 +174,7 @@ class svlformation_and_validation(aetest.Testcase):
             else:
                 Logger.info("Stackwise Virtual link status validation is success for stackpair: {}".format(stackpair))
     
-class CommonCleanup(aetest.CommonCleanup):
+class common_cleanup(aetest.CommonCleanup):
     @aetest.subsection
     def disconnect_from_devices(self, svl_handle):
         logging.info("Disconnected from the device...Into common cleanup section")
