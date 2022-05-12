@@ -44,7 +44,7 @@ Topology:
 Checkout the code with git or download from github directly.
 ```bash
    git clone git@github.com:kpawans/Cat9KStackwiseVirtualUserLib.git
-   cd stackwiseVirtualFormation
+   cd Cat9KStackwiseVirtualUserLib
 ```
 #to run the setup installer:
 ```bash
